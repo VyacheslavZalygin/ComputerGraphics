@@ -1,6 +1,8 @@
 onload = () => {
-    
-    const newElement = document.createElement('h1');
-    newElement.innerHTML = "Новый красивый <em>заголовок</em>";
-    document.body.appendChild(newElement);
+    const userInput = prompt("Введите что-нибудь");
+    for (let i = 0; i < 10; i += 1) {
+        const newElement = document.createElement('h1');
+        newElement.innerHTML = userInput;
+        document.body.appendChild(newElement);
+    }
 };
