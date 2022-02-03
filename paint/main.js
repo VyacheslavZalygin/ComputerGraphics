@@ -1,19 +1,48 @@
 window.onload = () => {
-    // TODO: change brush
-    let brush = document.getElementById("brush");
+    // brush
+    const brush_img = document.getElementById("brush");
+    let brush = null;
 
+    // canvas
     const canvas = document.getElementById("canvas");
     canvas.width = 800;
     canvas.height = 600;
     const ctx = canvas.getContext("2d");
-    
-    const inp = document.getElementById("input");
-    let size = inp.value;
-    inp.oninput = event => {
-        size = inp.value;
+    clearCanvas(ctx);
+
+    // brush size
+    const size_inp = document.getElementById("input");
+    let size = size_inp.value;
+    size_inp.oninput = event => {
+        size = size_inp.value;
     };
 
-    clearCanvas(ctx);
+    // brush color
+    const colors_container = document.getElementById("colors");
+    const color_canvases = ['black', 'white', 'red', 'green', 'yellow', 'gray', 'blue']
+        .map(color => {
+            const c = document.createElement("canvas");
+            c.width = 50;
+            c.height = 50;
+            c.style = "border: 2px solid black; margin: 2px";
+            const c_ctx = c.getContext("2d");
+            c_ctx.fillStyle = color;
+            c_ctx.fillRect(0, 0, c_ctx.canvas.width, c_ctx.canvas.height);
+            c_ctx.globalCompositeOperation = "destination-in";
+            c_ctx.drawImage(brush_img, 0, 0, c_ctx.canvas.width, c_ctx.canvas.height);
+            return c;
+    })
+        .map(color => {
+            color.onclick = event => {
+                brush = color;
+                color_canvases.forEach(color => {
+                    color.style = "border: 2px solid black; margin: 2px";
+                })
+                color.style = "border: 2px solid red; margin: 2px";
+            };
+            colors_container.appendChild(color);
+            return color;
+    });
 
     const getMouseCoords = event => {
         const {x, y} = canvas.getBoundingClientRect();
@@ -24,6 +53,9 @@ window.onload = () => {
     let prevY = null;
 
     canvas.onmousedown = event => {
+        if (brush === null) {
+            alert("choose a color");
+        }
         const [x, y] = getMouseCoords(event);
         
         prevX = x;
