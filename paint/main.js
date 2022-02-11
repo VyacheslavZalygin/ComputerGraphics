@@ -1,7 +1,7 @@
 window.onload = () => {
     // brush
     const brush_img = document.getElementById("brush");
-    let brush = null;
+    let brush_ctx = null;
 
     // canvas
     const canvas = document.getElementById("canvas");
@@ -19,31 +19,28 @@ window.onload = () => {
 
     // brush color
     const colors_container = document.getElementById("colors");
-    const color_canvases = ['black', 'white', 'red', 'green', 'yellow', 'gray', 'blue']
+    const color_ctxs = ['white', 'black', 'red', 'green', 'yellow', 'gray', 'blue']
         .map(color => {
-            const c = document.createElement("canvas");
-            c.width = 50;
-            c.height = 50;
-            c.style = "border: 2px solid black; margin: 2px";
-            const c_ctx = c.getContext("2d");
-            c_ctx.fillStyle = color;
-            c_ctx.fillRect(0, 0, c_ctx.canvas.width, c_ctx.canvas.height);
-            c_ctx.globalCompositeOperation = "destination-in";
-            c_ctx.drawImage(brush_img, 0, 0, c_ctx.canvas.width, c_ctx.canvas.height);
-            return c;
+            const c_ctx = createColorCtx(color, brush_img);
+            makeColorBeautifulBrush(c_ctx);
+            return [c_ctx, createColorCtx(color, brush_img)];
     })
-        .map(color => {
-            color.onclick = event => {
-                brush = color;
-                color_canvases.forEach(color => {
-                    color.style = "border: 2px solid black; margin: 2px";
-                })
-                color.style = "border: 2px solid red; margin: 2px";
+        .map((el) => {
+            const [color_brush, color_ctx] = el;
+            console.log(color_ctx);
+            color_ctx.canvas.onclick = event => {
+                brush_ctx = color_brush;
+                color_ctxs.forEach(color => {
+                    color.canvas.style = "border: 2px solid black; margin: 2px";
+                });
+                color_ctx.canvas.style = "border: 2px solid red; margin: 2px";
             };
-            colors_container.appendChild(color);
-            return color;
+            colors_container.appendChild(color_ctx.canvas);
+            
+            return color_ctx;
     });
-
+    color_ctxs[0].canvas.onclick();
+ 
     const getMouseCoords = event => {
         const {x, y} = canvas.getBoundingClientRect();
         return [event.clientX - x, event.clientY - y];
@@ -53,7 +50,7 @@ window.onload = () => {
     let prevY = null;
 
     canvas.onmousedown = event => {
-        if (brush === null) {
+        if (brush_ctx === null) {
             alert("choose a color");
         }
         const [x, y] = getMouseCoords(event);
@@ -61,7 +58,7 @@ window.onload = () => {
         prevX = x;
         prevY = y;
         
-        drawBrush(ctx, x, y, brush, size);
+        drawBrush(ctx, x, y, brush_ctx, size);
     };
 
     onmousemove = event => {
@@ -70,7 +67,7 @@ window.onload = () => {
         const [x, y] = getMouseCoords(event);
         
         forEachPixel(prevX, prevY, x, y, (x, y) => {
-            drawBrush(ctx, x, y, brush, size);
+            drawBrush(ctx, x, y, brush_ctx, size);
         });
         
         prevX = x;
@@ -88,8 +85,8 @@ function clearCanvas(ctx) {
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
-function drawBrush(ctx, x, y, brush, size) {
-    ctx.drawImage(brush, x - size/2, y - size/2, size, size);
+function drawBrush(ctx, x, y, brush_ctx, size) {
+    ctx.drawImage(brush_ctx.canvas, x - size/2, y - size/2, size, size);
 }
 
 function forEachPixel(x0, y0, x1, y1, action) {
@@ -108,4 +105,37 @@ function forEachPixel(x0, y0, x1, y1, action) {
         y += dy/maxDiff;
         action(x, y);
     }
+}
+
+function makeColorBeautifulBrush(brush_ctx) {
+    const data = brush_ctx.getImageData(0, 0, brush_ctx.canvas.width, brush_ctx.canvas.height);
+    const pixels = data.data;
+
+    for (let y = 0; y < data.height; y++) {
+        for (let x = 0; x < data.width; x++) {
+            const offset = 4 * (y*data.width + x);
+            
+            const dx =2*x/data.width - 1;
+            const dy =2*y/data.height - 1;
+            const dd = dx*dx + dy*dy;
+            
+            // alpha component
+            pixels[offset + 3] = Math.floor(150 * Math.max(1-dd, 0));
+        }
+    }
+ 
+    brush_ctx.putImageData(data, 0, 0);
+}
+
+function createColorCtx(color, brush_img) {
+    const c = document.createElement("canvas");
+    c.width = 50;
+    c.height = 50;
+    c.style = "border: 2px solid black; margin: 2px";
+    const c_ctx = c.getContext('2d');
+    c_ctx.fillStyle = color;
+    c_ctx.fillRect(0, 0, c_ctx.canvas.width, c_ctx.canvas.height);
+    c_ctx.globalCompositeOperation = "destination-in";
+    c_ctx.drawImage(brush_img, 0, 0, c_ctx.canvas.width, c_ctx.canvas.height);
+    return c_ctx;
 }
