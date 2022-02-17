@@ -1,36 +1,72 @@
 let CTX = null;
+let BRUSH = null;
+let POINTS = [];
+
 onload = () => {
   const canvas = document.getElementById("CANVAS");
   const ctx = canvas.getContext("2d");
+  canvas.width = 800;
+  canvas.height = 600;
   CTX = ctx;
 
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+  BRUSH = document.getElementById("BRUSH");
+
   main();
 };
 
 function main() {
-    const size = 50;
-    const r = size*1.5;
-    const grid = newGrid(CTX, size);
+  const size = 25;
+  const r = size*1.5;
+  const grid = newGrid(CTX, size);
 
-    const getMouseCoords = event => {
-        const {x, y} = CTX.canvas.getBoundingClientRect();
-        return [event.clientX - x, event.clientY - y];
-    };
+  const getMouseCoords = event => {
+    const {x, y} = CTX.canvas.getBoundingClientRect();
+    return [event.clientX - x, event.clientY - y];
+  };
 
-    CTX.canvas.onclick = e => {
-        const [x, y] = getMouseCoords();
-        grid.applyInfluence(x, y, r);
-    };
+  CTX.canvas.onclick = e => {
+    const [x, y] = getMouseCoords(e);
+    POINTS.push([x, y]);
+    grid.applyInfluence(x, y, r);
+    processSquares(grid);
+  };
+}
+
+function processSquares(grid) {
+  let segments = []
+  for (let i = 0; i < grid.ncols-1; i++) {
+    for (let j = 0; j < grid.nrows-1; j++) {
+      const points = [grid.getNode(i, j), grid.getNode(i, j+1), grid.getNode(i+1, j+1), grid.getNode(i+1, j)];
+      segments.push(...getSegments(points, 0.5));
+    }
+  }
+  clearCanvas();
+  drawPoints();
+  drawLines(segments);
+}
+
+function drawPoints() {
+  for (const point of POINTS) {
+    const [x, y] = point;
+    drawPoint(x, y, 10);
+  }
+}
+
+function drawLines(segments) {
+  for (const segment of segments) {
+    const [s, e] = segment;
+    forEachPixel(s.x, s.y, e.x, e.y, (x, y) => drawPoint(x, y, 6));
+  }
 }
 
 function forEachPixel(x0, y0, x1, y1, action) {
     const dx = x1-x0;
     const dy = y1-y0; 
     const maxDiff = Math.max(Math.abs(dx), Math.abs(dy));
-    
+
     action(x0, y0);
 
     if (maxDiff === 0) { return; }
@@ -42,6 +78,15 @@ function forEachPixel(x0, y0, x1, y1, action) {
         y += dy/maxDiff;
         action(x, y);
     }
+}
+
+function clearCanvas() {
+  CTX.fillStyle = `black`;
+  CTX.fillRect(0, 0, CTX.canvas.width, CTX.canvas.height);
+}
+
+function drawPoint(x, y, size) {
+  CTX.drawImage(BRUSH, x - size/2, y - size/2, size, size);
 }
 
 function newGrid(ctx, cellSide) {
@@ -166,6 +211,7 @@ function getSegments(points, threshold) {
 
   for (const segment of SEGMENT_TABLE[index]) {
     const [side1, side2] = segment;
+    if (side1 === undefined || side2 === undefined) { continue; }
     const [i11, i12] = SEGMENT_TO_VERTICES[side1];
     const [i21, i22] = SEGMENT_TO_VERTICES[side2];
     const m1 = getMidpoint(i11, i12);
