@@ -11,12 +11,19 @@ function drawMath() {
 }
 
 function generateMatrix(dimen) {
-    return `$$
+    let matrix = `$$\\begin{matrix} & `;
+    for (let i = 0; i < dimen; i++) {
+        matrix += `e_${}`;
+    }
+    return matrix;
+        `$$
         \\begin{matrix}
         & a & b \\\\ c & d
         \\end{matrix}
         $$`;
 }
+
+function basis
 
 function computeElement(a, b) {
     return "e_{-1}";
