@@ -18,7 +18,6 @@ onload = () => {
     GL.generateMipmap(GL.TEXTURE_2D);
     
     const lights = GL.createTexture();
-
     GL.activeTexture(GL.TEXTURE1);
     GL.bindTexture(GL.TEXTURE_2D, lights);
     GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 2, 0, GL.RED, GL.FLOAT, 
@@ -47,7 +46,7 @@ onload = () => {
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
         GL.uniform1f(uniforms.destination, 1.5);
-        GL.uniform1i(uniforms.lights, 0.1);
+        GL.uniform1i(uniforms.lights, 1);
     
         GL.drawArrays(GL.TRIANGLES, 0, 36);
     
@@ -58,7 +57,6 @@ onload = () => {
 
     renderFrame(0);
 }
-
 
 function processResize() {
     const width = GL.canvas.clientWidth;
@@ -74,7 +72,6 @@ function processResize() {
     return aspect;
 }
 
-
 function setupScene() {
     const attributes = {
         coord: 0,
@@ -83,7 +80,7 @@ function setupScene() {
 
     const program = buildProgram(VS_SRC, FS_SRC, attributes);
 
-    const cube = createCubeVAO(attributes);  
+    const cube = createSphereVAO(attributes);  
 
     GL.enable(GL.DEPTH_TEST);
 
@@ -97,7 +94,7 @@ function setupScene() {
 }
 
 
-function createCubeVAO(attributes) {
+function createSphereVAO(attributes) {
     const vao = GL.createVertexArray();
 
     GL.bindVertexArray(vao);
@@ -243,7 +240,7 @@ vec3 calculate_normal() {
 
 void main() {
     vec3 surface_color = 
-        abs(cube_x) > 0.999
+        abs(cube_x) > 0.99
         ? vec3(0.7, 0.7, 0.7)
         : texture(tex, tex_coords).rgb;
 
@@ -254,26 +251,31 @@ void main() {
     ivec2 lights_size = textureSize(lights, 0);
 
     for (int i = 0; i < lights_size.y; i++) {
+        if (i == 0) {
+            continue;
+        }
+        
         vec3 light_pos = vec3(
-            texelFetch(lights, ivec2(0, i), 0).r,
-            texelFetch(lights, ivec2(1, i), 0).r,
-            texelFetch(lights, ivec2(2, i), 0).r
+            texelFetch(lights, ivec2(0, 0), 0).r,
+            texelFetch(lights, ivec2(1, 0), 0).r,
+            texelFetch(lights, ivec2(2, 0), 0).r
         );
 
-        float light_intensity = texelFetch(lights, ivec2(3, i), 0).r;
-
+        float light_intensity = texelFetch(lights, ivec2(3, 0), 0).r;
+        
         // направление от точки поверхности на источник света:
         vec3 direction = light_pos - position;
         float normal_direction = dot(normal, direction);
-
+        
         if (normal_direction > 0.0) {
             float inv_distance = inversesqrt(dot(direction, direction));
 
-            intensity += 
+            /*intensity += 
                 light_intensity 
                 * normal_direction
-                * pow(inv_distance, 3.0);
-        }
+                * pow(inv_distance, 3.0);*/
+            intensity += 0.3;
+        }        
     }
 
     frag_color = vec4(intensity * surface_color, 1);
