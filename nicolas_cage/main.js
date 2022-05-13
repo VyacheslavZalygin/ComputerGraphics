@@ -41,7 +41,7 @@ onload = () => {
     
         GL.bindVertexArray(cube);
     
-        GL.uniform3f(uniforms.axis, 1, 1, 1);
+        GL.uniform3f(uniforms.axis, 1, 3, 1);
         GL.uniform1f(uniforms.angle, time/1000);
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
