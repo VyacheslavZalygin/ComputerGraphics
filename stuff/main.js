@@ -270,11 +270,11 @@ void main() {
         if (normal_direction > 0.0) {
             float inv_distance = inversesqrt(dot(direction, direction));
 
-            /*intensity += 
+            intensity += 
                 light_intensity 
                 * normal_direction
-                * pow(inv_distance, 3.0);*/
-            intensity += 0.3;
+                * pow(inv_distance, 3.0);
+            // intensity += 0.3;
         }        
     }
 
