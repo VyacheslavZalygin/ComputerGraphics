@@ -80,7 +80,7 @@ function setupScene() {
 
     const program = buildProgram(VS_SRC, FS_SRC, attributes);
 
-    const cube = createSphereVAO(attributes);  
+    const cube = createCubeVAO(attributes);  
 
     GL.enable(GL.DEPTH_TEST);
 
@@ -94,7 +94,7 @@ function setupScene() {
 }
 
 
-function createSphereVAO(attributes) {
+function createCubeVAO(attributes) {
     const vao = GL.createVertexArray();
 
     GL.bindVertexArray(vao);

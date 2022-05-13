@@ -1,55 +1,54 @@
-function makeSphere(r, c) {
-    // const v0 = [-1, -1, -1, 0];
-    // const v1 = [-1, -1,  1, 1];
-    // const v2 = [-1,  1, -1, 2];
-    // const v3 = [-1,  1,  1, 3];
-    // const v4 = [1,  -1, -1, 4];
-    // const v5 = [1,  -1,  1, 5];
-    // const v6 = [1,   1, -1, 6];
-    // const v7 = [1,   1,  1, 7];
+function makeSphere(r, c) {    
+    let o = [0, 0, 0];
+    let a = [1, 0, 0];
+    let b = [0, 1, 0];
+    let v1 = turn([1, 0], a, b, rad(30));
+    let v2 = turn(v1.slice(0, 2), a, b, rad(30));
 
-    // return Float32Array.from(
-    //     v0.concat(v1).concat(v2)
-    //     .concat(v1).concat(v2).concat(v3)
-    //     .concat(v0).concat(v1).concat(v4)
-    //     .concat(v1).concat(v4).concat(v5)
-    //     .concat(v0).concat(v2).concat(v4)
-    //     .concat(v2).concat(v4).concat(v6)
-    //     .concat(v7).concat(v3).concat(v6)
-    //     .concat(v3).concat(v6).concat(v2)
-    //     .concat(v7).concat(v5).concat(v3)
-    //     .concat(v5).concat(v3).concat(v1)
-    //     .concat(v7).concat(v5).concat(v6)
-    //     .concat(v5).concat(v6).concat(v4)
-    // );
-    
-    const o =  [0, 0, 0];
-    const v1 = [1, 0, 0];
-    const v2 = from(radians(30), v1);
+    console.log(v1, v2);
 
     return Float32Array.from(
-        o.concat(v1).concat(v2)
+        point(o).concat(point(a)).concat(point(v1))
+        .concat(point(o)).concat(point(v1)).concat(point(v2))
     );
 }
 
-function from(rad, vec) {
-    const [a, b, c] = vec;
-    const sin = Math.sin(rad);
-    const cos = Math.cos(rad);
-    return [a*sin, b*cos, с];
+function point(vec, i=-1) {
+    return [...vec, i]
 }
 
-function add(v1, v2) {
-    const [a, b, c] = v1;
-    const [d, e, f] = v2;
-    return [a+d, b+e, c+f];
-}
-
-function len(vec) {
-
-}
-
-
-function radians(degree) {
+function rad(degree) {
     return degree * Math.PI / 180;
+}
+
+function geo(v1, v2) {
+    const [a, b, c] = math.cross(v1, v2);
+    return [a, -b, c];
+}
+
+function fromVec(v, a, b) {
+    const [v1, v2] = v;
+    const [a1, a2, a3] = a;
+    const [b1, b2, b3] = b;
+
+    return [(v1*a1 + v2*b1), (v1*a2 + v2*b2), (v1*a3 + v2+b3)];
+}
+
+function turn(v, a, b, angle) {
+    const [v1, v2] = v;
+    const [a1, a2, a3] = a;
+    const [b1, b2, b3] = b;
+
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const alpha = (v1*a1 + v2*b1);
+    const betta = (v1*a2 + v2*b2);
+    const gamma = (v1*a3 + v2*b3);
+    const delta = (a2*b1 - a1*b2);
+    const omega = (a3*b1 - a1*b3);
+    const ro    = (a3*b2 - a2*b3);
+
+    return [(alpha*cos - sin*(betta*delta + gamma*omega)),
+            (betta*cos - sin*(alpha*delta - gamma*ro   )),
+            (gamma*cos - sin*(alpha*omega + betta*ro   ))];
 }
