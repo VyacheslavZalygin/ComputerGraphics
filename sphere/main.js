@@ -7,7 +7,7 @@ onload = () => {
 
     GL = canvas.getContext(`webgl2`);
 
-    const { cube, program, uniforms } = setupScene();
+    const { sphere, program, uniforms } = setupScene();
     
     const renderFrame = time => {
         const aspect = processResize();
@@ -17,7 +17,7 @@ onload = () => {
 
         GL.useProgram(program);
     
-        GL.bindVertexArray(cube);
+        GL.bindVertexArray(sphere);
     
         GL.uniform3f(uniforms.axis, 
             0, 1, 0
@@ -60,7 +60,7 @@ function setupScene() {
 
     const program = buildProgram(VS_SRC, FS_SRC, attributes);
 
-    const cube = createSphereVAO(attributes);  
+    const sphere = createSphereVAO(attributes);  
 
     GL.enable(GL.DEPTH_TEST);
 
@@ -70,7 +70,7 @@ function setupScene() {
         uniforms[name] = GL.getUniformLocation(program, name);
     }
 
-    return { program, cube, uniforms };
+    return { program, sphere, uniforms };
 }
 
 
@@ -96,6 +96,7 @@ function createSphereVAO(attributes) {
 
     return vao;
 }
+
 
 const VS_SRC = `#version 300 es
 
@@ -137,6 +138,7 @@ void main() {
 }
 `;
 
+
 const FS_SRC = `#version 300 es
 
 precision highp float;
@@ -147,6 +149,7 @@ void main() {
     frag_color = vec4(0.8, 0.5, 0.7, 1);
 }
 `;
+
 
 function buildProgram(vsSource, fsSource, attributes) {
     const vs = compileShader(vsSource, 'vertex');
@@ -175,6 +178,7 @@ function buildProgram(vsSource, fsSource, attributes) {
 
     return program;
 }
+
 
 function compileShader(source, type) {
     let glType = type;
