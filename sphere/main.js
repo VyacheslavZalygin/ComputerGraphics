@@ -5,9 +5,11 @@ onload = () => {
     canvas.width = 600;
     canvas.height = 600;
 
+    const count = 36;
+
     GL = canvas.getContext(`webgl2`);
 
-    const { sphere, program, uniforms } = setupScene();
+    const { sphere, program, uniforms } = setupScene(count);
     
     const renderFrame = time => {
         const aspect = processResize();
@@ -26,7 +28,7 @@ onload = () => {
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
     
-        GL.drawArrays(GL.TRIANGLES, 0, 36);
+        GL.drawArrays(GL.TRIANGLES, 0, count*3);
     
         GL.bindVertexArray(null);
 
@@ -52,7 +54,7 @@ function processResize() {
 }
 
 
-function setupScene() {
+function setupScene(count) {
     const attributes = {
         coord: 0,
         index: 1,
@@ -60,7 +62,7 @@ function setupScene() {
 
     const program = buildProgram(VS_SRC, FS_SRC, attributes);
 
-    const sphere = createSphereVAO(attributes);  
+    const sphere = createSphereVAO(attributes, count);  
 
     GL.enable(GL.DEPTH_TEST);
 
@@ -74,7 +76,7 @@ function setupScene() {
 }
 
 
-function createSphereVAO(attributes) {
+function createSphereVAO(attributes, count) {
     const vao = GL.createVertexArray();
 
     GL.bindVertexArray(vao);
@@ -82,7 +84,7 @@ function createSphereVAO(attributes) {
     const buffer = GL.createBuffer();
 
     GL.bindBuffer(GL.ARRAY_BUFFER, buffer);
-    GL.bufferData(GL.ARRAY_BUFFER, makeSphere(), GL.STATIC_DRAW);
+    GL.bufferData(GL.ARRAY_BUFFER, makeSphere(count), GL.STATIC_DRAW);
    
     const { coord, index } = attributes;
 
