@@ -20,9 +20,9 @@ onload = () => {
         GL.bindVertexArray(sphere);
     
         GL.uniform3f(uniforms.axis, 
-            0, 1, 0
+            0, 0, 1
         );
-        GL.uniform1f(uniforms.angle, 0);
+        GL.uniform1f(uniforms.angle, time/1000);
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
     

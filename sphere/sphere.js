@@ -2,19 +2,19 @@ function makeSphere() {
     const center = [0, 0, 0];
 
     let vertexes = [[1, 0, 0]];
-    const count = 360;
+    const count = 24;
     const step = Math.PI * 2 / count;
     for (let i = 1; i < count; i++) {
         vertexes.push(turnInDefaultPlane(vertexes[i-1], step));
     }
     console.log(vertexes);
-    return makeTriangles(center, vertexes.slice(10, 360));
+    return makeTriangles(center, vertexes);
 }
 
 function makeTriangles(center, vertexes) {
     let res = [];
     const len = vertexes.length;
-    for (let i = 0; i < len-1; i++) {
+    for (let i = 0; i < len-1; i += 1) {
         const v1 = vertexes[i];
         const v2 = vertexes[i+1];
         res = res.concat(point(center)).concat(point(v1)).concat(point(v2));
@@ -23,7 +23,7 @@ function makeTriangles(center, vertexes) {
     return Float32Array.from(res);
 }
 
-function point(vec, i=-1) {
+function point(vec, i=2) {
     return [...vec, i]
 }
 
