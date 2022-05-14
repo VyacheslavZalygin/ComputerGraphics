@@ -5,7 +5,7 @@ onload = () => {
     canvas.width = 600;
     canvas.height = 600;
 
-    const count = 36;
+    const count = 18;
 
     GL = canvas.getContext(`webgl2`);
 
@@ -22,13 +22,13 @@ onload = () => {
         GL.bindVertexArray(sphere);
     
         GL.uniform3f(uniforms.axis, 
-            0, 0, 1
+            0, 1, 0
         );
-        GL.uniform1f(uniforms.angle, time/1000);
+        GL.uniform1f(uniforms.angle, 0);
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
     
-        GL.drawArrays(GL.TRIANGLES, 0, count*3);
+        GL.drawArrays(GL.TRIANGLES, 0, count*count*3);
     
         GL.bindVertexArray(null);
 
