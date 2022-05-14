@@ -82,7 +82,7 @@ function createSphereVAO(attributes) {
     const buffer = GL.createBuffer();
 
     GL.bindBuffer(GL.ARRAY_BUFFER, buffer);
-    GL.bufferData(GL.ARRAY_BUFFER, makeSphere(1, 3), GL.STATIC_DRAW);
+    GL.bufferData(GL.ARRAY_BUFFER, makeSphere(), GL.STATIC_DRAW);
    
     const { coord, index } = attributes;
 

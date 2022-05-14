@@ -22,8 +22,8 @@ onload = () => {
     GL.bindTexture(GL.TEXTURE_2D, lights);
     GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 2, 0, GL.RED, GL.FLOAT, 
         Float32Array.from([
-            4, 3, -5, 130,
-            -4, 1, 3, 20,
+            4, 3, 0, 50,
+            -4, 1, 0, -1000,
         ])
     );
     GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
