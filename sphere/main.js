@@ -5,7 +5,7 @@ onload = () => {
     canvas.width = 600;
     canvas.height = 600;
 
-    const count = 18;
+    const count = 20;
 
     GL = canvas.getContext(`webgl2`);
 
@@ -24,11 +24,15 @@ onload = () => {
         GL.uniform3f(uniforms.axis, 
             0, 1, 0
         );
+        GL.uniform3f(uniforms.bxis,
+            0, 0, 1
+        );
         GL.uniform1f(uniforms.angle, 0);
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
+        GL.uniform1f(uniforms.scale, 3);
     
-        GL.drawArrays(GL.TRIANGLES, 0, count*count*3);
+        GL.drawArrays(GL.TRIANGLES, 0, count*count*6);
     
         GL.bindVertexArray(null);
 
@@ -37,7 +41,6 @@ onload = () => {
 
     renderFrame(0);
 }
-
 
 function processResize() {
     const width = GL.canvas.clientWidth;
@@ -53,7 +56,6 @@ function processResize() {
     return aspect;
 }
 
-
 function setupScene(count) {
     const attributes = {
         coord: 0,
@@ -68,13 +70,12 @@ function setupScene(count) {
 
     const uniforms = {};
 
-    for (const name of ['axis', 'angle', 'translation', 'aspect']) {
+    for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale']) {
         uniforms[name] = GL.getUniformLocation(program, name);
     }
 
     return { program, sphere, uniforms };
 }
-
 
 function createSphereVAO(attributes, count) {
     const vao = GL.createVertexArray();
@@ -89,26 +90,59 @@ function createSphereVAO(attributes, count) {
     const { coord, index } = attributes;
 
     GL.enableVertexAttribArray(coord);
-    GL.vertexAttribPointer(coord, 3, GL.FLOAT, false, 16, 0);
+    GL.vertexAttribPointer(coord, 2, GL.FLOAT, false, 12, 0);
 
     GL.enableVertexAttribArray(index);
-    GL.vertexAttribPointer(index, 1, GL.FLOAT, false, 16, 12);
+    GL.vertexAttribPointer(index, 1, GL.FLOAT, false, 12, 8);
 
     GL.bindVertexArray(null);
 
     return vao;
 }
 
+function makeSphere(count) {
+    const vertexes = [];
+    for (let i = 0; i < count; i += 1) {
+        const plane = [];
+        for (let j = 0; j < count; j += 1) {
+            plane.push([rad(180/(count-1))*j, rad(360/count)*i]);
+        }
+        vertexes.push(plane);
+    }
+
+    let triangles = [];
+    for (let i = 0; i < count; i += 1) {
+        for (let j = 0; j < count - 1; j += 1){
+            const [a1, a2] = [vertexes[i][j], vertexes[i][j+1]];
+            const [b1, b2] = [vertexes[(i+1+count)%count][j], vertexes[(i+1+count)%count][j+1]];
+
+            triangles = triangles
+                .concat(point(a1)).concat(point(a2)).concat(point(b2))
+                .concat(point(a1)).concat(point(b1)).concat(point(b2));
+        }
+    }
+    console.log(vertexes);
+    return Float32Array.from(triangles);
+}
+
+function rad(degree) {
+    return degree * Math.PI / 180;
+}
+
+function point(vec, i=-1) {
+    return [...vec, i]
+}
 
 const VS_SRC = `#version 300 es
 
-in vec3 coord;
-in float index;  // пока не убираем! (позже пригодится)
+in vec2 coord;
+in float index;
 
 uniform vec3 axis;
-uniform float angle;
+uniform vec3 bxis;
 uniform vec3 translation;
 uniform float aspect;
+uniform float scale;
 
 // t = t.z e12 - t.y e13 + t.x e23 + t.w e
 vec4 lapply(vec4 t, vec3 v) {
@@ -132,14 +166,11 @@ vec3 rotate(vec3 coord, vec3 axis, float angle) {
 }
 
 void main() {
-    float scale = 2.3;
-
-    vec3 position = rotate(scale*coord, axis, angle) + translation;
+    vec3 position = rotate(rotate(scale*axis, bxis, coord.x), axis, coord.y) + translation;
     
     gl_Position = vec4(position.x, position.y*aspect, -1, position.z);
 }
 `;
-
 
 const FS_SRC = `#version 300 es
 
@@ -151,7 +182,6 @@ void main() {
     frag_color = vec4(0.8, 0.5, 0.7, 1);
 }
 `;
-
 
 function buildProgram(vsSource, fsSource, attributes) {
     const vs = compileShader(vsSource, 'vertex');
@@ -180,7 +210,6 @@ function buildProgram(vsSource, fsSource, attributes) {
 
     return program;
 }
-
 
 function compileShader(source, type) {
     let glType = type;
