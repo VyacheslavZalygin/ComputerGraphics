@@ -5,9 +5,20 @@ onload = () => {
     canvas.width = 600;
     canvas.height = 600;
 
-    const count = 20;
+    const count = 50;
 
     GL = canvas.getContext(`webgl2`);
+
+    const lights = GL.createTexture();
+    GL.activeTexture(GL.TEXTURE1);
+    GL.bindTexture(GL.TEXTURE_2D, lights);
+    GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 1, 0, GL.RED, GL.FLOAT, 
+        Float32Array.from([
+            4, 3, -3, 50,
+        ])
+    );
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.NEAREST);
 
     const { sphere, program, uniforms } = setupScene(count);
     
@@ -31,6 +42,7 @@ onload = () => {
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
         GL.uniform1f(uniforms.scale, 3);
+        GL.uniform1i(uniforms.lights, 1);
     
         GL.drawArrays(GL.TRIANGLES, 0, count*count*6);
     
@@ -70,7 +82,7 @@ function setupScene(count) {
 
     const uniforms = {};
 
-    for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale']) {
+    for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale', 'lights']) {
         uniforms[name] = GL.getUniformLocation(program, name);
     }
 
@@ -144,6 +156,8 @@ uniform vec3 translation;
 uniform float aspect;
 uniform float scale;
 
+out vec3 position;
+
 // t = t.z e12 - t.y e13 + t.x e23 + t.w e
 vec4 lapply(vec4 t, vec3 v) {
     return vec4(t.w * v + cross(v, t.xyz), dot(v, t.xyz));
@@ -166,7 +180,7 @@ vec3 rotate(vec3 coord, vec3 axis, float angle) {
 }
 
 void main() {
-    vec3 position = rotate(rotate(scale*axis, bxis, coord.x), axis, coord.y) + translation;
+    position = rotate(rotate(scale*axis, bxis, coord.x), axis, coord.y) + translation;
     
     gl_Position = vec4(position.x, position.y*aspect, -1, position.z);
 }
@@ -176,10 +190,51 @@ const FS_SRC = `#version 300 es
 
 precision highp float;
 
+in vec3 position;
+
+uniform sampler2D lights;
+
 out vec4 frag_color;
 
+vec3 calculate_normal() {
+    vec3 dir1 = dFdx(position);
+    vec3 dir2 = dFdy(position);
+    
+    return normalize(cross(dir2, dir1));
+}
+
 void main() {
-    frag_color = vec4(0.8, 0.5, 0.7, 1);
+    vec3 surface_color = vec3(0.7, 0.7, 0.7);
+    float intensity = 0.3;
+
+    vec3 normal = calculate_normal();
+
+    ivec2 lights_size = textureSize(lights, 0);
+
+    for (int i = 0; i < lights_size.y; i++) {
+        vec3 light_pos = vec3(
+            texelFetch(lights, ivec2(0, 0), 0).r,
+            texelFetch(lights, ivec2(1, 0), 0).r,
+            texelFetch(lights, ivec2(2, 0), 0).r
+        );
+
+        float light_intensity = texelFetch(lights, ivec2(3, 0), 0).r;
+        
+        // направление от точки поверхности на источник света:
+        vec3 direction = light_pos - position;
+        float normal_direction = dot(normal, direction);
+        
+        if (normal_direction > 0.0) {
+            float inv_distance = inversesqrt(dot(direction, direction));
+
+            intensity += 
+                light_intensity 
+                * normal_direction
+                * pow(inv_distance, 3.0);
+        }        
+    }
+
+    frag_color = vec4(intensity * surface_color, 1);
 }
 `;
 
