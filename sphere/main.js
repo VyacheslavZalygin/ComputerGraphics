@@ -7,7 +7,7 @@ onload = () => {
     canvas.width = 600;
     canvas.height = 600;
 
-    const count = 30;
+    const count = 20;
 
     const image = document.getElementById('image');
     
@@ -32,6 +32,9 @@ onload = () => {
 
     const { sphere, program, uniforms } = setupScene(count);
     
+    let axis = [0, 1, 0];
+    let bxis = [0, 0, 1];
+
     const renderFrame = time => {
         const aspect = processResize();
 
@@ -41,13 +44,11 @@ onload = () => {
         GL.useProgram(program);
     
         GL.bindVertexArray(sphere);
+
+        // bxis = rotate(bxis, axis, rad(0.00000001));
     
-        GL.uniform3f(uniforms.axis, 
-            0, 1, 0
-        );
-        GL.uniform3f(uniforms.bxis,
-            0, 0, 1
-        );
+        GL.uniform3f(uniforms.axis, ...axis);
+        GL.uniform3f(uniforms.bxis, ...bxis);
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
         GL.uniform1f(uniforms.scale, 3);
@@ -128,13 +129,10 @@ function makeSphere(count) {
         const plane = [];
         for (let j = 0; j < count; j += 1) {
             let [a, b] = [0, 0];
-            if (textureState == 0) {
-                a = Math.pow((count/8+i)/(count/2), 2);
-                b = Math.pow((count/8+j)/(count/2), 2);
-            } else {
-                a = (count/2+i)/(count/2);
-                b = (count/4+j)/(count/2);
-            }
+            const c = count;
+            a = Math.abs(i/c - 0.5);
+            b = (j/c); // высота
+            if (a > 0.9) a = 1;
             plane.push([rad(180/(count-1))*j, rad(360/count)*i, a, b]);
         }
         vertexes.push(plane);
@@ -151,7 +149,7 @@ function makeSphere(count) {
                 .concat(a1).concat(b1).concat(b2);
         }
     }
-    console.log(vertexes);
+    console.log(vertexes[0]);
     return Float32Array.from(triangles);
 }
 
@@ -161,6 +159,52 @@ function rad(degree) {
 
 function point(vec) {
     return [...vec, 0, 0];
+}
+
+function normalize(vec) {
+    const [v1, v2, v3] = vec;
+    const l = Math.sqrt(v1**2 + v2**2 + v3**2);
+    return [v1/l, v2/l, v3/l];
+}
+
+function dot(a, b) {
+    const [a1, a2, a3] = a;
+    const [b1, b2, b3] = b;
+    return a1*b1 + a2*b2 + a3*b3;
+}
+
+function cross(a, b) {
+    const [a1, a2, a3] = a;
+    const [b1, b2, b3] = b;
+    return [a2*b3 - b2*a3, a3*b1 - b1*a3, a1*b2 - b1*a2];
+}
+
+function lapply(t, v) {
+    const [t1, t2, t3, t4] = t;
+    const [v1, v2, v3] = v;
+    const [c1, c2, c3] = cross(v, [t1, t2, t3]);
+    return [v1*t4 + c1, v2*t4 + c2, v3*t4 + c3, dot(v, [t1, t2, t3])];
+}
+
+function rapply(t, v) {
+    const [v1, v2, v3, v4] = v;
+    const [t1, t2, t3, t4] = t;
+    const [c1, c2, c3] = cross([t1, t2, t3], [v1, v2, v3]);
+    return [t4*v1-v4*t1 + c1, t4*v2-v4*t2 + c2, t4*v3-v4*t3 + c3];
+}
+
+function rotate(vec, axis, angle) {
+    axis = normalize(axis);
+    const [a1, a2, a3] = axis;
+    const cos = Math.cos(angle/2);
+    const sin = Math.sin(angle/2);
+
+    const [r1, r2, r3, r4] = [sin * a1, sin * a2, sin * a3, cos];
+    const [l1, l2, l3, l4] = [-r1, -r2, -r3, r4];
+
+    const [o1, o2, o3] = rapply(lapply([l1, l2, l3, l4], vec), [r1, r2, r3, r4])
+
+    return [-o1, -o2, -o3];
 }
 
 const VS_SRC = `#version 300 es
