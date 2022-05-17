@@ -1,6 +1,5 @@
 let GL = null;
-
-const textureState = 1;
+let prevCoord = undefined;
 
 onload = () => {
     const canvas = document.getElementById(`canvas`);
@@ -8,32 +7,44 @@ onload = () => {
     canvas.height = 600;
 
     const count = 20;
+    let axis = [0, 1, 0];
+    let bxis = [0, 0, 1];
+
+    const getMouseCoords = event => {
+        const {x, y} = canvas.getBoundingClientRect();
+        return [event.clientX - x, event.clientY - y];
+    };
+
+    canvas.onmousedown = event => { prevCoord = getMouseCoords(event); };
+    canvas.onmouseup = event => { prevCoord = undefined; };
+    canvas.onmouse = event => { prevCoord = undefined; };
+
+    canvas.onmousemove = event => {
+        if (prevCoord !== undefined) {
+            const coord = getMouseCoords(event);
+            const v = [coord[0]-prevCoord[0], prevCoord[1]-coord[1], 0];
+            if (len(v) !== 0) {
+                const a = cross(v, [0, 0, 1]);
+                const angle = rad(len(a) / Math.PI);
+
+                const new_axis = rotate(axis, a, angle);
+                axis[0] = new_axis[0];
+                axis[1] = new_axis[1];
+                axis[2] = new_axis[2];
+                const new_bxis = rotate(bxis, a, angle);
+                bxis[0] = new_bxis[0];
+                bxis[1] = new_bxis[1];
+                bxis[2] = new_bxis[2];
+            }
+            prevCoord = coord;
+        }
+    };
 
     const image = document.getElementById('image');
     
     GL = canvas.getContext(`webgl2`);
 
-    const texture = GL.createTexture();    
-    GL.activeTexture(GL.TEXTURE0);
-    GL.bindTexture(GL.TEXTURE_2D, texture);
-    GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
-    GL.generateMipmap(GL.TEXTURE_2D);
-    
-    const lights = GL.createTexture();
-    GL.activeTexture(GL.TEXTURE1);
-    GL.bindTexture(GL.TEXTURE_2D, lights);
-    GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 1, 0, GL.RED, GL.FLOAT, 
-        Float32Array.from([
-            4, 3, -3, 70,
-        ])
-    );
-    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
-    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.NEAREST);
-
-    const { sphere, program, uniforms } = setupScene(count);
-    
-    let axis = [0, 1, 0];
-    let bxis = [0, 0, 1];
+    const { sphere, program, uniforms } = setupScene(count, image);
 
     const renderFrame = time => {
         const aspect = processResize();
@@ -45,7 +56,8 @@ onload = () => {
     
         GL.bindVertexArray(sphere);
 
-        // bxis = rotate(bxis, axis, rad(0.00000001));
+        // bxis = rotate(bxis, axis, rad(0.1));
+        // console.log(bxis);
     
         GL.uniform3f(uniforms.axis, ...axis);
         GL.uniform3f(uniforms.bxis, ...bxis);
@@ -79,7 +91,7 @@ function processResize() {
     return aspect;
 }
 
-function setupScene(count) {
+function setupScene(count, image) {
     const attributes = {
         coord: 0,
         texture_coord: 1,
@@ -96,6 +108,23 @@ function setupScene(count) {
     for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale', 'lights', 'tex']) {
         uniforms[name] = GL.getUniformLocation(program, name);
     }
+
+    const texture = GL.createTexture();    
+    GL.activeTexture(GL.TEXTURE0);
+    GL.bindTexture(GL.TEXTURE_2D, texture);
+    GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
+    GL.generateMipmap(GL.TEXTURE_2D);
+    
+    const lights = GL.createTexture();
+    GL.activeTexture(GL.TEXTURE1);
+    GL.bindTexture(GL.TEXTURE_2D, lights);
+    GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 1, 0, GL.RED, GL.FLOAT, 
+        Float32Array.from([
+            4, 3, -3, 70,
+        ])
+    );
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.NEAREST);
 
     return { program, sphere, uniforms };
 }
@@ -161,9 +190,14 @@ function point(vec) {
     return [...vec, 0, 0];
 }
 
+function len(vec) {
+    const [v1, v2, v3] = vec;
+    return Math.sqrt(v1**2 + v2**2 + v3**2);
+}
+
 function normalize(vec) {
     const [v1, v2, v3] = vec;
-    const l = Math.sqrt(v1**2 + v2**2 + v3**2);
+    const l = len(vec);
     return [v1/l, v2/l, v3/l];
 }
 
@@ -176,7 +210,7 @@ function dot(a, b) {
 function cross(a, b) {
     const [a1, a2, a3] = a;
     const [b1, b2, b3] = b;
-    return [a2*b3 - b2*a3, a3*b1 - b1*a3, a1*b2 - b1*a2];
+    return [a2*b3 - a3*b2, a3*b1 - a1*b3, a1*b2 - a2*b1];
 }
 
 function lapply(t, v) {
