@@ -1,11 +1,13 @@
 let GL = null;
 
+const textureState = 1;
+
 onload = () => {
     const canvas = document.getElementById(`canvas`);
     canvas.width = 600;
     canvas.height = 600;
 
-    const count = 20;
+    const count = 30;
 
     const image = document.getElementById('image');
     
@@ -22,7 +24,7 @@ onload = () => {
     GL.bindTexture(GL.TEXTURE_2D, lights);
     GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 1, 0, GL.RED, GL.FLOAT, 
         Float32Array.from([
-            4, 3, -3, 50,
+            4, 3, -3, 70,
         ])
     );
     GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
@@ -125,7 +127,15 @@ function makeSphere(count) {
     for (let i = 0; i < count; i += 1) {
         const plane = [];
         for (let j = 0; j < count; j += 1) {
-            plane.push([rad(180/(count-1))*j, rad(360/count)*i, (count/2+i)/(count/2), (count/4+j)/(count/2)]);
+            let [a, b] = [0, 0];
+            if (textureState == 0) {
+                a = Math.pow((count/8+i)/(count/2), 2);
+                b = Math.pow((count/8+j)/(count/2), 2);
+            } else {
+                a = (count/2+i)/(count/2);
+                b = (count/4+j)/(count/2);
+            }
+            plane.push([rad(180/(count-1))*j, rad(360/count)*i, a, b]);
         }
         vertexes.push(plane);
     }
