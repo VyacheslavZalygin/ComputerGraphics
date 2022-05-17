@@ -5,10 +5,18 @@ onload = () => {
     canvas.width = 600;
     canvas.height = 600;
 
-    const count = 50;
+    const count = 20;
 
+    const image = document.getElementById('image');
+    
     GL = canvas.getContext(`webgl2`);
 
+    const texture = GL.createTexture();    
+    GL.activeTexture(GL.TEXTURE0);
+    GL.bindTexture(GL.TEXTURE_2D, texture);
+    GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
+    GL.generateMipmap(GL.TEXTURE_2D);
+    
     const lights = GL.createTexture();
     GL.activeTexture(GL.TEXTURE1);
     GL.bindTexture(GL.TEXTURE_2D, lights);
@@ -38,10 +46,10 @@ onload = () => {
         GL.uniform3f(uniforms.bxis,
             0, 0, 1
         );
-        GL.uniform1f(uniforms.angle, 0);
         GL.uniform3f(uniforms.translation, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
         GL.uniform1f(uniforms.scale, 3);
+        GL.uniform1i(uniforms.tex, 0);
         GL.uniform1i(uniforms.lights, 1);
     
         GL.drawArrays(GL.TRIANGLES, 0, count*count*6);
@@ -71,7 +79,7 @@ function processResize() {
 function setupScene(count) {
     const attributes = {
         coord: 0,
-        index: 1,
+        texture_coord: 1,
     };
 
     const program = buildProgram(VS_SRC, FS_SRC, attributes);
@@ -82,7 +90,7 @@ function setupScene(count) {
 
     const uniforms = {};
 
-    for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale', 'lights']) {
+    for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale', 'lights', 'tex']) {
         uniforms[name] = GL.getUniformLocation(program, name);
     }
 
@@ -99,13 +107,13 @@ function createSphereVAO(attributes, count) {
     GL.bindBuffer(GL.ARRAY_BUFFER, buffer);
     GL.bufferData(GL.ARRAY_BUFFER, makeSphere(count), GL.STATIC_DRAW);
    
-    const { coord, index } = attributes;
+    const { coord, texture_coord } = attributes;
 
     GL.enableVertexAttribArray(coord);
-    GL.vertexAttribPointer(coord, 2, GL.FLOAT, false, 12, 0);
+    GL.vertexAttribPointer(coord, 2, GL.FLOAT, false, 16, 0);
 
-    GL.enableVertexAttribArray(index);
-    GL.vertexAttribPointer(index, 1, GL.FLOAT, false, 12, 8);
+    GL.enableVertexAttribArray(texture_coord);
+    GL.vertexAttribPointer(texture_coord, 2, GL.FLOAT, false, 16, 8);
 
     GL.bindVertexArray(null);
 
@@ -117,7 +125,7 @@ function makeSphere(count) {
     for (let i = 0; i < count; i += 1) {
         const plane = [];
         for (let j = 0; j < count; j += 1) {
-            plane.push([rad(180/(count-1))*j, rad(360/count)*i]);
+            plane.push([rad(180/(count-1))*j, rad(360/count)*i, (count/2-i)/(count/2), (count/2-j)/(count/2)]);
         }
         vertexes.push(plane);
     }
@@ -129,8 +137,8 @@ function makeSphere(count) {
             const [b1, b2] = [vertexes[(i+1+count)%count][j], vertexes[(i+1+count)%count][j+1]];
 
             triangles = triangles
-                .concat(point(a1)).concat(point(a2)).concat(point(b2))
-                .concat(point(a1)).concat(point(b1)).concat(point(b2));
+                .concat(a1).concat(a2).concat(b2)
+                .concat(a1).concat(b1).concat(b2);
         }
     }
     console.log(vertexes);
@@ -141,14 +149,14 @@ function rad(degree) {
     return degree * Math.PI / 180;
 }
 
-function point(vec, i=-1) {
-    return [...vec, i]
+function point(vec) {
+    return [...vec, 0, 0];
 }
 
 const VS_SRC = `#version 300 es
 
 in vec2 coord;
-in float index;
+in vec2 texture_coord;
 
 uniform vec3 axis;
 uniform vec3 bxis;
@@ -157,6 +165,7 @@ uniform float aspect;
 uniform float scale;
 
 out vec3 position;
+out vec2 tex_coord;
 
 // t = t.z e12 - t.y e13 + t.x e23 + t.w e
 vec4 lapply(vec4 t, vec3 v) {
@@ -182,6 +191,7 @@ vec3 rotate(vec3 coord, vec3 axis, float angle) {
 void main() {
     position = rotate(rotate(scale*axis, bxis, coord.x), axis, coord.y) + translation;
     
+    tex_coord = texture_coord;
     gl_Position = vec4(position.x, position.y*aspect, -1, position.z);
 }
 `;
@@ -191,8 +201,10 @@ const FS_SRC = `#version 300 es
 precision highp float;
 
 in vec3 position;
+in vec2 tex_coord;
 
 uniform sampler2D lights;
+uniform sampler2D tex;
 
 out vec4 frag_color;
 
@@ -204,7 +216,7 @@ vec3 calculate_normal() {
 }
 
 void main() {
-    vec3 surface_color = vec3(0.7, 0.7, 0.7);
+    vec3 surface_color = texture(tex, tex_coord).rgb;
     float intensity = 0.3;
 
     vec3 normal = calculate_normal();
