@@ -125,7 +125,7 @@ function makeSphere(count) {
     for (let i = 0; i < count; i += 1) {
         const plane = [];
         for (let j = 0; j < count; j += 1) {
-            plane.push([rad(180/(count-1))*j, rad(360/count)*i, (count/2-i)/(count/2), (count/2-j)/(count/2)]);
+            plane.push([rad(180/(count-1))*j, rad(360/count)*i, (count/2+i)/(count/2), (count/4+j)/(count/2)]);
         }
         vertexes.push(plane);
     }
