@@ -55,9 +55,6 @@ onload = () => {
         GL.useProgram(program);
     
         GL.bindVertexArray(sphere);
-
-        // bxis = rotate(bxis, axis, rad(0.1));
-        // console.log(bxis);
     
         GL.uniform3f(uniforms.axis, ...axis);
         GL.uniform3f(uniforms.bxis, ...bxis);
@@ -67,7 +64,7 @@ onload = () => {
         GL.uniform1i(uniforms.tex, 0);
         GL.uniform1i(uniforms.lights, 1);
     
-        GL.drawArrays(GL.TRIANGLES, 0, count*count*6);
+        GL.drawArrays(GL.TRIANGLES, 0, count*(count-1)*6);
     
         GL.bindVertexArray(null);
 
@@ -160,7 +157,7 @@ function makeSphere(count) {
             let [a, b] = [0, 0];
             const c = count;
             a = Math.abs(i/c - 0.5);
-            b = (j/c); // высота
+            b = (j/c);
             if (a > 0.9) a = 1;
             plane.push([rad(180/(count-1))*j, rad(360/count)*i, a, b]);
         }
@@ -178,7 +175,7 @@ function makeSphere(count) {
                 .concat(a1).concat(b1).concat(b2);
         }
     }
-    console.log(vertexes[0]);
+    console.log(triangles);
     return Float32Array.from(triangles);
 }
 
