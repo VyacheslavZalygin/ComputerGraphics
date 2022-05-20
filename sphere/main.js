@@ -58,7 +58,7 @@ onload = () => {
     
         GL.uniform3f(uniforms.axis, ...axis);
         GL.uniform3f(uniforms.bxis, ...bxis);
-        GL.uniform3f(uniforms.translation, 0, 0, 7);
+        GL.uniform3f(uniforms.center, 0, 0, 7);
         GL.uniform1f(uniforms.aspect, aspect);
         GL.uniform1f(uniforms.scale, 3);
         GL.uniform1i(uniforms.tex, 0);
@@ -102,7 +102,7 @@ function setupScene(count, image) {
 
     const uniforms = {};
 
-    for (const name of ['axis', 'bxis', 'translation', 'aspect', 'scale', 'lights', 'tex']) {
+    for (const name of ['axis', 'bxis', 'center', 'aspect', 'scale', 'lights', 'tex']) {
         uniforms[name] = GL.getUniformLocation(program, name);
     }
 
@@ -117,7 +117,7 @@ function setupScene(count, image) {
     GL.bindTexture(GL.TEXTURE_2D, lights);
     GL.texImage2D(GL.TEXTURE_2D, 0, GL.R32F, 4, 1, 0, GL.RED, GL.FLOAT, 
         Float32Array.from([
-            4, 3, -3, 70,
+            4, 3, -3, 30,
         ])
     );
     GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
@@ -245,12 +245,13 @@ in vec2 texture_coord;
 
 uniform vec3 axis;
 uniform vec3 bxis;
-uniform vec3 translation;
+uniform vec3 center;
 uniform float aspect;
 uniform float scale;
 
 out vec3 position;
 out vec2 tex_coord;
+out vec3 cent;
 
 // t = t.z e12 - t.y e13 + t.x e23 + t.w e
 vec4 lapply(vec4 t, vec3 v) {
@@ -274,7 +275,8 @@ vec3 rotate(vec3 coord, vec3 axis, float angle) {
 }
 
 void main() {
-    position = rotate(rotate(scale*axis, bxis, coord.x), axis, coord.y) + translation;
+    position = rotate(rotate(scale*axis, bxis, coord.x), axis, coord.y) + center;
+    cent = center;
     
     tex_coord = texture_coord;
     gl_Position = vec4(position.x, position.y*aspect, -1, position.z);
@@ -287,6 +289,7 @@ precision highp float;
 
 in vec3 position;
 in vec2 tex_coord;
+in vec3 cent;
 
 uniform sampler2D lights;
 uniform sampler2D tex;
@@ -304,7 +307,7 @@ void main() {
     vec3 surface_color = texture(tex, tex_coord).rgb;
     float intensity = 0.3;
 
-    vec3 normal = calculate_normal();
+    vec3 normal = position - cent;
 
     ivec2 lights_size = textureSize(lights, 0);
 
